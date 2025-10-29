@@ -1,0 +1,127 @@
+// ====== Pines Motores ======
+#define PIN_MOTOR_LEFT_1   3
+#define PIN_MOTOR_LEFT_2   6
+#define PIN_MOTOR_RIGHT_1  9
+#define PIN_MOTOR_RIGHT_2  5
+
+// ====== Sensores ======
+#define QTR_LEFT   8
+#define QTR_RIGHT  2
+#define IR_LEFT    A7
+#define IR_CENTER  A4
+#define IR_RIGHT   A2
+
+// ====== Umbrales ======
+#define LINE_THRESHOLD   400   // Ajusta según tus lecturas QTR
+#define IR_THRESHOLD     200   // Ajusta según tus lecturas JS40F
+
+// ====== Variables ======
+int qtrLeft, qtrRight;
+int irLeft, irCenter, irRight;
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(PIN_MOTOR_LEFT_1, OUTPUT);
+  pinMode(PIN_MOTOR_LEFT_2, OUTPUT);
+  pinMode(PIN_MOTOR_RIGHT_1, OUTPUT);
+  pinMode(PIN_MOTOR_RIGHT_2, OUTPUT);
+  
+  Serial.println("=== Modo Combate Minisumo ===");
+}
+
+void loop() {
+  leerSensores();
+
+  // 1️⃣ Evitar salirse del ring
+  if (qtrLeft < LINE_THRESHOLD || qtrRight < LINE_THRESHOLD) {
+    retrocederRapido();
+    delay(300);
+    girarAleatorio();
+    return;
+  }
+
+  // 2️⃣ Buscar oponente
+  if (irCenter < IR_THRESHOLD) {
+    // Enemigo al frente
+    avanzarRapido();
+  } 
+  else if (irLeft < IR_THRESHOLD) {
+    // Enemigo a la izquierda
+    girarIzquierda();
+  } 
+  else if (irRight < IR_THRESHOLD) {
+    // Enemigo a la derecha
+    girarDerecha();
+  } 
+  else {
+    // No hay detección, buscar
+    girarLento();
+  }
+}
+
+// ==================== FUNCIONES ====================
+void leerSensores() {
+  qtrLeft  = analogRead(QTR_LEFT);
+  qtrRight = analogRead(QTR_RIGHT);
+  irLeft   = analogRead(IR_LEFT);
+  irCenter = analogRead(IR_CENTER);
+  irRight  = analogRead(IR_RIGHT);
+}
+
+void avanzarRapido() {
+  set_motors(255, 255);
+}
+
+void retrocederRapido() {
+  set_motors(-255, -255);
+}
+
+void girarIzquierda() {
+  set_motors(-200, 200);
+}
+
+void girarDerecha() {
+  set_motors(200, -200);
+}
+
+void girarLento() {
+  set_motors(150, -150);
+}
+
+void girarAleatorio() {
+  if (random(0, 2) == 0)
+    girarIzquierda();
+  else
+    girarDerecha();
+  delay(400);
+  stop_movement();
+}
+
+// ====== Tus funciones previas ======
+void stop_movement(void){
+  digitalWrite(PIN_MOTOR_LEFT_1, HIGH);
+  digitalWrite(PIN_MOTOR_LEFT_2, HIGH);
+  digitalWrite(PIN_MOTOR_RIGHT_1, HIGH);
+  digitalWrite(PIN_MOTOR_RIGHT_2, HIGH);  
+}
+
+void set_motors(int16_t l_motor_value, int16_t r_motor_value){
+  //Left
+  if(l_motor_value > 0){
+    digitalWrite(PIN_MOTOR_LEFT_1, HIGH);
+    analogWrite(PIN_MOTOR_LEFT_2, 255 - l_motor_value);
+  } else {
+    digitalWrite(PIN_MOTOR_LEFT_2, HIGH);
+    analogWrite(PIN_MOTOR_LEFT_1, 255 + l_motor_value);
+  }
+
+  //Right
+  if(r_motor_value > 0){
+    digitalWrite(PIN_MOTOR_RIGHT_1, HIGH);
+    analogWrite(PIN_MOTOR_RIGHT_2, 255 - r_motor_value);
+  } else {
+    digitalWrite(PIN_MOTOR_RIGHT_2, HIGH);
+    analogWrite(PIN_MOTOR_RIGHT_1, 255 + r_motor_value);
+  }
+}
